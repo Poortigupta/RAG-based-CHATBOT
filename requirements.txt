@@ -9,7 +9,8 @@ langchain-text-splitters==0.2.4
 langchain-google-genai==1.0.10
 
 unstructured==0.14.4       # Document loading
-chromadb==0.5.5            # Vector storage
+# langchain-chroma 0.1.4 requires chromadb != 0.5.4, != 0.5.5, < 0.6.0
+chromadb==0.5.7            # Vector storage (compatible with langchain-chroma 0.1.4)
 openai==1.51.0             # For embeddings (locked to 1.x)
 requests==2.32.3
 tiktoken==0.7.0            # For embeddings
