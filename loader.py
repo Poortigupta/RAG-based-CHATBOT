@@ -17,10 +17,6 @@ def main():
     # Disable Chroma/telemetry noise
     os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
     os.environ.setdefault("CHROMA_TELEMETRY", "False")
-    # Only require OPENAI_API_KEY if using OpenAI embeddings
-    provider = os.getenv("EMBEDDING_PROVIDER", "GOOGLE").upper()
-    if provider == "OPENAI" and not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY not set. Either set it, change EMBEDDING_PROVIDER to LOCAL or GOOGLE, or switch to a local model.")
     generate_data_store()
 
 def generate_data_store():
