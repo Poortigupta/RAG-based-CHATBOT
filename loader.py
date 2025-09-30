@@ -5,12 +5,7 @@ import os
 import shutil     
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
-
-from langchain_community.embeddings import HuggingFaceEmbeddings
-try:
-    from langchain_google_genai import GoogleGenerativeAIEmbeddings
-except Exception:
-    GoogleGenerativeAIEmbeddings = None  # Optional dependency
+from rag_core import get_embedding_function
 from pathlib import Path
 import time
 
@@ -67,31 +62,7 @@ def split_text(documents: list[Document]):
 
     return chunks
 
-def get_embedding_function():
-    """Return an embedding function based on EMBEDDING_PROVIDER env var.
-
-    Options:
-    - OPENAI: uses OpenAIEmbeddings (model set via EMBEDDING_MODEL or defaults to text-embedding-3-small)
-    - GOOGLE: uses GoogleGenerativeAIEmbeddings (requires GOOGLE_API_KEY and model via GOOGLE_EMBEDDING_MODEL or defaults to text-embedding-004)
-    - LOCAL (default): uses HuggingFaceEmbeddings with sentence-transformers model (HF_EMBEDDING_MODEL or all-MiniLM-L6-v2)
-    """
-    provider = os.getenv("EMBEDDING_PROVIDER", "GOOGLE").upper()
-    if provider == "OPENAI":
-        # Lazy import to avoid importing langchain_openai unless needed
-        from importlib import import_module
-        OpenAIEmbeddings = getattr(import_module("langchain_openai.embeddings"), "OpenAIEmbeddings")
-        model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-        return OpenAIEmbeddings(model=model)
-    if provider == "GOOGLE":
-        if GoogleGenerativeAIEmbeddings is None:
-            raise RuntimeError("langchain-google-genai is not installed. Add it to requirements or set EMBEDDING_PROVIDER=LOCAL.")
-        if not os.getenv("GOOGLE_API_KEY"):
-            raise RuntimeError("GOOGLE_API_KEY not set. Add it to .env or set EMBEDDING_PROVIDER=LOCAL.")
-        model = os.getenv("GOOGLE_EMBEDDING_MODEL", "text-embedding-004")
-        return GoogleGenerativeAIEmbeddings(model=model)
-    # LOCAL by default
-    hf_model = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-    return HuggingFaceEmbeddings(model_name=hf_model)
+# get_embedding_function now comes from rag_core
 
 
 def save_to_chroma(chunks: list[Document]):

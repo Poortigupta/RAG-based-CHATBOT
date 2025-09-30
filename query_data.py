@@ -1,57 +1,13 @@
 import argparse
 import os
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
+from rag_core import build_db, get_chat_model, PROMPT_TEMPLATE
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 
 CHROMA_PATH = "chroma"
 
-PROMPT_TEMPLATE = """
-Answer the question based only on the following context:
 
-{context}
-
----
-
-Answer the question based on the above context: {question}
-"""
-
-
-def get_embedding_function():
-    provider = os.getenv("EMBEDDING_PROVIDER", "GOOGLE").upper()
-    if provider == "OPENAI":
-        from importlib import import_module
-        OpenAIEmbeddings = getattr(import_module("langchain_openai.embeddings"), "OpenAIEmbeddings")
-        model = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-        return OpenAIEmbeddings(model=model)
-    if provider == "GOOGLE":
-        if not os.getenv("GOOGLE_API_KEY"):
-            raise RuntimeError("GOOGLE_API_KEY not set; add it to your .env or set EMBEDDING_PROVIDER=LOCAL.")
-        model = os.getenv("GOOGLE_EMBEDDING_MODEL", "text-embedding-004")
-        return GoogleGenerativeAIEmbeddings(model=model)
-    # LOCAL
-    hf_model = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-    return HuggingFaceEmbeddings(model_name=hf_model)
-
-
-def get_chat_model():
-    provider = os.getenv("EMBEDDING_PROVIDER", "GOOGLE").upper()
-    # Use same provider selection for chat model
-    if provider == "GOOGLE":
-        # Default Gemini chat model
-        chat_model = os.getenv("GOOGLE_CHAT_MODEL", "gemini-2.5-flash")
-        if not os.getenv("GOOGLE_API_KEY"):
-            raise RuntimeError("GOOGLE_API_KEY not set; add it to your .env or set EMBEDDING_PROVIDER=LOCAL.")
-        return ChatGoogleGenerativeAI(model=chat_model)
-    if provider == "OPENAI":
-        # Lazy import to avoid importing unless needed
-        from importlib import import_module
-        ChatOpenAI = getattr(import_module("langchain_openai"), "ChatOpenAI")
-        return ChatOpenAI()
-    # LOCAL provider has no chat model; return None
-    return None
+"""All embedding/chat selection and prompt text come from rag_core now."""
 
 
 def main():
@@ -64,9 +20,8 @@ def main():
     args = parser.parse_args()
     query_text = args.query_text
 
-    # Prepare the DB.
-    embedding_function = get_embedding_function()
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+    # Prepare the DB (embedding provider comes from rag_core)
+    db = build_db(CHROMA_PATH)
 
     # Search the DB with more results and a lower threshold to improve recall.
     k = int(os.getenv("RETRIEVAL_K", "8"))
