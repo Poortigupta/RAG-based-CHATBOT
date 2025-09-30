@@ -26,4 +26,5 @@ ENV PORT=8000
 EXPOSE 8000
 
 # Start FastAPI app
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "${PORT}"]
+# Use shell form so $PORT expands at runtime (Render supplies PORT)
+CMD uvicorn api:app --host 0.0.0.0 --port $PORT
