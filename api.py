@@ -78,7 +78,8 @@ async def ingest(file: UploadFile | None = File(default=None)) -> Dict[str, Any]
 
     docs = load_documents()
     chunks = split_text(docs)
-    save_to_chroma(chunks)
+    # In API, append to existing Chroma store; do not delete on each upload
+    save_to_chroma(chunks, reset=False)
     return {
         "status": "ok",
         "saved_file": saved_path,
@@ -90,27 +91,28 @@ async def ingest(file: UploadFile | None = File(default=None)) -> Dict[str, Any]
 
 @app.post("/ingest/upload")
 async def ingest_upload(file: UploadFile = File(...)) -> Dict[str, Any]:
-        """Strict file upload endpoint that always shows a file picker in Swagger UI."""
-        if not file.filename:
-                return {"status": "error", "message": "No file provided."}
-        if not file.filename.lower().endswith(".pdf"):
-                return {"status": "error", "message": "Only PDF files are supported."}
-        os.makedirs(DATA_PATH, exist_ok=True)
-        saved_path = os.path.join(DATA_PATH, file.filename)
-        content = await file.read()
-        with open(saved_path, "wb") as f:
-                f.write(content)
+    """Strict file upload endpoint that always shows a file picker in Swagger UI."""
+    if not file.filename:
+        return {"status": "error", "message": "No file provided."}
+    if not file.filename.lower().endswith(".pdf"):
+        return {"status": "error", "message": "Only PDF files are supported."}
+    os.makedirs(DATA_PATH, exist_ok=True)
+    saved_path = os.path.join(DATA_PATH, file.filename)
+    content = await file.read()
+    with open(saved_path, "wb") as f:
+        f.write(content)
 
-        docs = load_documents()
-        chunks = split_text(docs)
-        save_to_chroma(chunks)
-        return {
-                "status": "ok",
-                "saved_file": saved_path,
-                "documents": len(docs),
-                "chunks": len(chunks),
-                "persist_directory": CHROMA_PATH,
-        }
+    docs = load_documents()
+    chunks = split_text(docs)
+    # Append to existing Chroma store
+    save_to_chroma(chunks, reset=False)
+    return {
+        "status": "ok",
+        "saved_file": saved_path,
+        "documents": len(docs),
+        "chunks": len(chunks),
+        "persist_directory": CHROMA_PATH,
+    }
 
 
 @app.get("/upload", response_class=HTMLResponse)

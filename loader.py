@@ -22,7 +22,8 @@ def main():
 def generate_data_store():
     documents = load_documents()
     chunks = split_text(documents)
-    save_to_chroma(chunks)
+    # CLI build: rebuild vector store from scratch
+    save_to_chroma(chunks, reset=True)
 
 def load_documents():
     print("Loading PDFs from:", os.path.abspath(DATA_PATH))
@@ -61,12 +62,14 @@ def split_text(documents: list[Document]):
 # get_embedding_function now comes from rag_core
 
 
-def save_to_chroma(chunks: list[Document]):
+def save_to_chroma(chunks: list[Document], reset: bool = False):
     if not chunks:
         print("No chunks to save. Skipping vector store creation.")
         return
-    if os.path.exists(CHROMA_PATH):
+    if reset and os.path.exists(CHROMA_PATH):
         shutil.rmtree(CHROMA_PATH)
+    # Ensure persist directory exists before Chroma tries to open sqlite
+    os.makedirs(CHROMA_PATH, exist_ok=True)
 
     # Select embedding backend (LOCAL by default)
     embeddings = get_embedding_function()

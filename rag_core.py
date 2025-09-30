@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from langchain_chroma import Chroma
+import os
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
@@ -76,7 +77,10 @@ def get_chat_model():
 
 def build_db(chroma_path: str):
     embedding_function = get_embedding_function()
-    return Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
+    # Ensure absolute path and existence for sqlite persistence
+    abs_path = os.path.abspath(chroma_path)
+    os.makedirs(abs_path, exist_ok=True)
+    return Chroma(persist_directory=abs_path, embedding_function=embedding_function)
 
 
 def retrieve(db: Chroma, query_text: str, k: int = 8):
