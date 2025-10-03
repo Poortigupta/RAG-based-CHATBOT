@@ -1,17 +1,18 @@
 python-dotenv==1.0.1  # For reading environment variables stored in .env file
 
-# LangChain 0.3.x upgrade (Option B)
-# Keep all langchain-associated packages aligned on the same major/minor family.
-langchain==0.3.1
-langchain-community==0.3.1
-langchain-openai==0.2.0
-langchain-chroma==0.2.6   # Compatible with langchain 0.3.x (0.1.6 does not exist)
-langchain-text-splitters==0.3.0
-langchain-google-genai==1.0.11
+##########
+# Stable LangChain 0.2.x stack (avoids langsmith conflicts in 0.3.x during deploy)
+langchain==0.2.16
+langchain-core<0.3.0
+langchain-community==0.2.16
+langchain-openai==0.1.23
+langchain-chroma==0.1.4
+langchain-text-splitters==0.2.4
+langchain-google-genai==1.0.10
 
 unstructured==0.14.4       # Document loading
-# Chroma version kept within <0.6 for compatibility (adjust if future constraints change)
-chromadb==0.5.7            # Vector store
+# Chroma compatible with langchain-chroma 0.1.4
+chromadb==0.5.7            # (excludes problematic 0.5.4 / 0.5.5 implicitly)
 openai==1.51.0             # For embeddings (locked to 1.x)
 requests==2.32.3
 tiktoken==0.7.0            # For embeddings
