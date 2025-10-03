@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -8,6 +9,7 @@ from fastapi.responses import HTMLResponse
 
 # Reuse existing pipeline pieces
 from loader import load_documents, split_text, save_to_chroma, CHROMA_PATH, DATA_PATH
+from langchain_chroma import Chroma
 from rag_core import query_rag
 
 
@@ -31,7 +33,18 @@ class MinimalQueryRequest(BaseModel):
     question: str
 
 
-app = FastAPI(title="RAG Chatbot API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_dotenv()
+    os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+    os.environ.setdefault("CHROMA_TELEMETRY", "False")
+    # Ensure vector store directory exists early
+    os.makedirs(os.path.abspath(CHROMA_PATH), exist_ok=True)
+    print("[lifespan] Environment initialized. Provider:", os.getenv("EMBEDDING_PROVIDER", "GOOGLE"))
+    yield
+    # (Optional) cleanup logic could go here
+
+app = FastAPI(title="RAG Chatbot API", version="1.0.0", lifespan=lifespan)
 
 # CORS for easy testing
 app.add_middleware(
@@ -43,23 +56,63 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def startup_event():
-    load_dotenv()
-    os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
-    os.environ.setdefault("CHROMA_TELEMETRY", "False")
+## Deprecated startup event removed (migrated to lifespan)
 
 
 @app.get("/")
 @app.get("/health")
 def health() -> Dict[str, Any]:
+    """Basic health plus quick vector store stats (safe / best-effort)."""
+    provider = os.getenv("EMBEDDING_PROVIDER", "GOOGLE")
+    stats: Dict[str, Any] = {}
+    try:
+        # Attempt lightweight status (do not rebuild embeddings)
+        db = Chroma(persist_directory=os.path.abspath(CHROMA_PATH), embedding_function=lambda x: [[0.0]])  # type: ignore
+        # Access underlying collection count if available
+        collection = getattr(db, "_collection", None)
+        if collection is not None:
+            stats["vector_count"] = collection.count()
+            stats["collection_name"] = getattr(collection, "name", None)
+    except Exception as e:
+        stats["vector_store_error"] = str(e)
     return {
         "status": "ok",
-        "provider": os.getenv("EMBEDDING_PROVIDER", "GOOGLE"),
-        "persist_directory": CHROMA_PATH,
-        "data_path": DATA_PATH,
+        "provider": provider,
+        "persist_directory": os.path.abspath(CHROMA_PATH),
+        "data_path": os.path.abspath(DATA_PATH),
+        "vectors": stats.get("vector_count"),
+        "collection": stats.get("collection_name"),
+        "vector_store_error": stats.get("vector_store_error"),
+        "ingest_endpoint": "/ingest/upload",
+        "query_endpoint": "/query",
         "docs": "/docs",
     }
+
+
+@app.get("/debug/store")
+def debug_store() -> Dict[str, Any]:
+    """Return detailed store diagnostics to help troubleshoot empty results."""
+    info: Dict[str, Any] = {"persist_directory": os.path.abspath(CHROMA_PATH)}
+    try:
+        # Use a dummy embedding function (Chroma won't embed new texts here)
+        db = Chroma(persist_directory=os.path.abspath(CHROMA_PATH), embedding_function=lambda x: [[0.0]])  # type: ignore
+        collection = getattr(db, "_collection", None)
+        if collection:
+            info["collection_name"] = getattr(collection, "name", None)
+            info["vector_count"] = collection.count()
+            # Fetch up to 3 metadata samples
+            try:
+                raw = collection.get(limit=3)
+                info["sample_ids"] = raw.get("ids")
+                info["sample_metadatas"] = raw.get("metadatas")
+            except Exception as sub_e:
+                info["sample_error"] = str(sub_e)
+    except Exception as e:
+        info["error"] = str(e)
+    # Tell user next step if empty
+    if info.get("vector_count", 0) == 0:
+        info["hint"] = "Vector store empty. Upload a PDF via /upload or /ingest/upload before querying."
+    return info
 
 
 @app.post("/ingest")
