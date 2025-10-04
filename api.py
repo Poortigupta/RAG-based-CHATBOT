@@ -41,6 +41,28 @@ async def lifespan(app: FastAPI):
     # Ensure vector store directory exists early
     os.makedirs(os.path.abspath(CHROMA_PATH), exist_ok=True)
     print("[lifespan] Environment initialized. Provider:", os.getenv("EMBEDDING_PROVIDER", "GOOGLE"))
+    # Auto-ingest bundled PDFs (e.g., Samadhan.pdf) if vector store is empty.
+    try:
+        from rag_core import get_embedding_function
+        embedding_fn = get_embedding_function()
+        db = Chroma(persist_directory=os.path.abspath(CHROMA_PATH), embedding_function=embedding_fn)
+        collection = getattr(db, "_collection", None)
+        current_count = collection.count() if collection else 0
+        if current_count == 0:
+            print("[lifespan] Vector store empty. Attempting auto-ingest of bundled PDFs...")
+            docs = load_documents()
+            if docs:
+                chunks = split_text(docs)
+                # Full rebuild since store is empty
+                from loader import save_to_chroma
+                save_to_chroma(chunks, reset=True)
+                print(f"[lifespan] Auto-ingest complete. Chunks saved: {len(chunks)}")
+            else:
+                print("[lifespan] No PDFs found to auto-ingest. Place PDFs in the project root or mount a volume.")
+        else:
+            print(f"[lifespan] Existing vector store detected with {current_count} vectors; skipping auto-ingest.")
+    except Exception as e:
+        print("[lifespan][warn] Auto-ingest skipped due to error:", e)
     yield
     # (Optional) cleanup logic could go here
 
