@@ -126,7 +126,7 @@ RAG-based-CHATBOT/
 |-----------|-------------|---------|
 | `EMBEDDING_PROVIDER` | Embedding provider (OPENAI/GOOGLE/LOCAL) | GOOGLE |
 | `RETRIEVAL_K` | Number of documents to retrieve | 8 |
-| `RELEVANCE_THRESHOLD` | Minimum relevance score | 0.5 |
+| `RELEVANCE_THRESHOLD` | Minimum relevance score | 0.3 |
 | `GOOGLE_EMBEDDING_MODEL` | Google embedding model | text-embedding-004 |
 | `GOOGLE_CHAT_MODEL` | Google chat model | gemini-2.5-flash |
 | `EMBEDDING_MODEL` | OpenAI embedding model | text-embedding-3-small |
