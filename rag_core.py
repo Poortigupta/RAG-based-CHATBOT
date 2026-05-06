@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from langchain_chroma import Chroma
 import os
 from langchain.prompts import ChatPromptTemplate
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 try:
     from langchain_google_genai import (
