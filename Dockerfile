@@ -16,6 +16,8 @@ WORKDIR /app
 # Install Python dependencies first for better layer caching
 COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
+# Pre-warm HuggingFace cache
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 
 # Copy application code
 COPY . .

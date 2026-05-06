@@ -25,7 +25,7 @@ def main():
 
     # Search the DB with more results and a lower threshold to improve recall.
     k = int(os.getenv("RETRIEVAL_K", "8"))
-    threshold = float(os.getenv("RELEVANCE_THRESHOLD", "0.5"))
+    threshold = float(os.getenv("RELEVANCE_THRESHOLD", "0.3"))
     results = db.similarity_search_with_relevance_scores(query_text, k=k)
 
     # Debug: show top hits, scores, and sources to verify indexing

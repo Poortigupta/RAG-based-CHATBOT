@@ -15,7 +15,7 @@ def main():
         OpenAIEmbeddings = getattr(import_module("langchain_openai.embeddings"), "OpenAIEmbeddings")
         embedding_function = OpenAIEmbeddings()
     elif provider == "GOOGLE":
-        embedding_function = GoogleGenerativeAIEmbeddings(model=os.getenv("GOOGLE_EMBEDDING_MODEL", "text-embedding-004"))
+        embedding_function = GoogleGenerativeAIEmbeddings(model=os.getenv("GOOGLE_EMBEDDING_MODEL", "gemini-embedding-2"))
     else:
         embedding_function = HuggingFaceEmbeddings(model_name=os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"))
     vector = embedding_function.embed_query("apple")

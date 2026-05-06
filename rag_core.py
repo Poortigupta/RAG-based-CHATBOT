@@ -44,7 +44,7 @@ def get_embedding_function():
             )
         if not os.getenv("GOOGLE_API_KEY"):
             raise RuntimeError("GOOGLE_API_KEY not set. Add it to .env or set EMBEDDING_PROVIDER=LOCAL.")
-        model = os.getenv("GOOGLE_EMBEDDING_MODEL", "text-embedding-004")
+        model = os.getenv("GOOGLE_EMBEDDING_MODEL", "gemini-embedding-2")
         # Normalize to expected name format for Google APIs
         if not model.startswith("models/"):
             model = f"models/{model}"
@@ -55,8 +55,8 @@ def get_embedding_function():
 
 
 def get_chat_model():
-    provider = os.getenv("EMBEDDING_PROVIDER", "GOOGLE").upper()
-    if provider == "GOOGLE":
+    chat_provider = os.getenv("CHAT_PROVIDER", "GOOGLE").upper()
+    if chat_provider == "GOOGLE":
         if ChatGoogleGenerativeAI is None:
             raise RuntimeError(
                 "langchain-google-genai is not installed. Add it to requirements or set EMBEDDING_PROVIDER=LOCAL."
@@ -67,7 +67,7 @@ def get_chat_model():
         if not os.getenv("GOOGLE_API_KEY"):
             raise RuntimeError("GOOGLE_API_KEY not set; add it to your .env or set EMBEDDING_PROVIDER=LOCAL.")
         return ChatGoogleGenerativeAI(model=chat_model)
-    if provider == "OPENAI":
+    if chat_provider == "OPENAI":
         from importlib import import_module
 
         ChatOpenAI = getattr(import_module("langchain_openai"), "ChatOpenAI")
